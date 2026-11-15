@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ALTCHA Integration Test</title>
+
+    <script
+    async
+    defer
+    type="module"
+    src="https://cdn.jsdelivr.net/gh/altcha-org/altcha/dist/main/altcha.min.js">
+    </script>
+
+</head>
+
+<body>
+
+<h1>ALTCHA - Test réel</h1>
+
+<form id="altcha-form">
+
+    <altcha-widget
+        id="altcha-widget"
+        challenge="/api/altcha/challenge">
+    </altcha-widget>
+
+    <br><br>
+
+    <button type="submit">
+        Envoyer
+    </button>
+
+</form>
+
+<h2>Résultat serveur</h2>
+
+<pre id="result">En attente...</pre>
+
+<script type="module">
+
+    const form = document.getElementById("altcha-form");
+    const widget = document.getElementById("altcha-widget");
+    const resultBox = document.getElementById("result");
+
+    let altchaPayload = null;
+
+    widget.addEventListener("statechange", (event) => {
+
+        console.log("ALTCHA state:", event.detail);
+
+        if (event.detail?.state === "verified") {
+            altchaPayload = event.detail.payload;
+            console.log("ALTCHA payload:", altchaPayload);
+        }
+    });
+
+    form.addEventListener("submit", async (event) => {
+
+        event.preventDefault();
+
+        if (!altchaPayload) {
+            resultBox.textContent =
+                "Le challenge ALTCHA n'est pas encore validé.";
+            return;
+        }
+
+        try {
+            const body = {
+            payload: altchaPayload
+        };
+
+        console.log("BODY envoyé :", body);
+        console.log("JSON envoyé :", JSON.stringify(body));
+            const response = await fetch(
+                "/api/altcha/verify",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                    payload: altchaPayload
+                    })
+                }
+            );
+
+            const text = await response.text();
+
+            console.log("Réponse serveur :", text);
+
+            resultBox.textContent = text;
+
+        } catch (error) {
+
+            console.error(error);
+
+            resultBox.textContent =
+                "Erreur : " + error.message;
+    }});
+
+</script>
+
+</body>
+</html>
